@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de jugadas · Primitiva y Euromillones</title>
+<style>
+:root{
+  --bg:#f3f1ec; --surface:#ffffff; --ink:#1d2433; --muted:#6a7080; --line:#dcd8cf;
+  --prim:#1f7a4d; --prim-ink:#ffffff; --euro:#1c3f8f; --euro-ink:#ffffff;
+  --ball:#f3f1ec; --extra:#e0a526; --extra-ink:#1d2433;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#14171f; --surface:#1d212c; --ink:#eceae4; --muted:#9aa0b0; --line:#303544;
+    --prim:#3fb27a; --prim-ink:#0d1a13; --euro:#6d95f0; --euro-ink:#0b1430;
+    --ball:#2a2f3d; --extra:#e0a526; --extra-ink:#1d2433; color-scheme:dark;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;line-height:1.5;
+  padding:24px 16px 48px}
+main{max-width:620px;margin:0 auto}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:2rem;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.tab{border:2px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;
+  padding:12px;font:inherit;font-weight:700;cursor:pointer}
+.tab small{display:block;font-weight:400;color:var(--muted)}
+.tab[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.tab[aria-pressed="true"] small{color:inherit;opacity:.85}
+body[data-game="prim"]{--accent:var(--prim);--accent-ink:var(--prim-ink)}
+body[data-game="euro"]{--accent:var(--euro);--accent-ink:var(--euro-ink)}
+.tab[data-game="prim"]{--accent:var(--prim);--accent-ink:var(--prim-ink)}
+.tab[data-game="euro"]{--accent:var(--euro);--accent-ink:var(--euro-ink)}
+label{display:block;font-weight:700;margin-bottom:6px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+input[type=number]{width:84px;padding:10px;font:inherit;border:1px solid var(--line);
+  border-radius:8px;background:var(--bg);color:var(--ink)}
+.go{flex:1;min-width:160px;padding:12px 18px;border:0;border-radius:10px;background:var(--accent);
+  color:var(--accent-ink);font:inherit;font-weight:700;cursor:pointer}
+.go:active{transform:translateY(1px)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--extra);outline-offset:2px}
+.hint{color:var(--muted);font-size:.9rem;margin:10px 0 0}
+#results{margin-top:20px;display:grid;gap:10px}
+.play{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.idx{color:var(--muted);font-weight:700;min-width:1.8em}
+.balls{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.ball{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;
+  background:var(--ball);border:2px solid var(--accent)}
+.ball.extra{background:var(--extra);border-color:var(--extra);color:var(--extra-ink)}
+.ball.star{border-radius:8px;transform:rotate(45deg)}
+.ball.star span{transform:rotate(-45deg)}
+.tag{font-size:.75rem;color:var(--muted);align-self:center}
+.tools{display:flex;gap:8px;margin-top:4px}
+.ghost{padding:8px 14px;border:1px solid var(--line);background:transparent;color:var(--ink);
+  border-radius:8px;font:inherit;cursor:pointer}
+.empty{color:var(--muted);text-align:center;padding:16px}
+footer{margin-top:28px;color:var(--muted);font-size:.8rem}
+@media (prefers-reduced-motion:no-preference){.play{animation:in .25s ease-out both}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}}
+</style>
+</head>
+<body data-game="prim">
+<main>
+  <h1>Generador de jugadas</h1>
+  <p class="sub">Elige el sorteo y genera varias combinaciones aleatorias a la vez.</p>
+
+  <section class="panel">
+    <div class="tabs" role="group" aria-label="Sorteo">
+      <button class="tab" data-game="prim" aria-pressed="true">La Primitiva<small>6 de 49 + reintegro</small></button>
+      <button class="tab" data-game="euro" aria-pressed="false">Euromillones<small>5 de 50 + 2 estrellas</small></button>
+    </div>
+
+    <label for="n">Número de jugadas</label>
+    <div class="row">
+      <input id="n" type="number" min="1" max="20" value="5" inputmode="numeric">
+      <button class="go" id="gen">Generar jugadas</button>
+    </div>
+    <p class="hint">De 1 a 20 jugadas. Cada pulsación genera combinaciones nuevas.</p>
+  </section>
+
+  <div id="results" aria-live="polite">
+    <div class="empty">Pulsa «Generar jugadas» para empezar.</div>
+  </div>
+  <div class="tools" id="tools" hidden>
+    <button class="ghost" id="copy">Copiar todas</button>
+  </div>
+
+  <footer>Los números se generan con el generador criptográfico del navegador. Todas las combinaciones tienen la misma probabilidad. Juega con responsabilidad.</footer>
+</main>
+
+<script>
+const GAMES = {
+  prim: {main:6, max:49, extras:[{label:"C", name:"Complementario", n:1, min:1, max:49, distinctFromMain:true},
+                                  {label:"R", name:"Reintegro", n:1, min:0, max:9, distinctFromMain:false}]},
+  euro: {main:5, max:50, extras:[{label:"★", name:"Estrellas", n:2, min:1, max:12, star:true}]}
+};
+let game = "prim", current = [];
+
+function rnd(max){ // entero uniforme en [0, max) sin sesgo
+  const lim = Math.floor(0x100000000 / max) * max, a = new Uint32Array(1);
+  do { crypto.getRandomValues(a); } while (a[0] >= lim);
+  return a[0] % max;
+}
+function pick(count, min, max, exclude = []){
+  const set = new Set();
+  while (set.size < count){
+    const v = min + rnd(max - min + 1);
+    if (!exclude.includes(v)) set.add(v);
+  }
+  return [...set];
+}
+const asc = (a,b)=>a-b;
+
+function makePlay(){
+  const g = GAMES[game];
+  const main = pick(g.main, 1, g.max).sort(asc);
+  const extras = g.extras.map(e => ({...e, values: pick(e.n, e.min, e.max, e.distinctFromMain ? main : []).sort(asc)}));
+  return {main, extras};
+}
+function playText(p){
+  return p.main.join(" - ") + "  |  " + p.extras.map(e => e.name + ": " + e.values.join(" - ")).join("  ");
+}
+function ball(v, cls){
+  const d = document.createElement("div");
+  d.className = "ball " + (cls || "");
+  const s = document.createElement("span"); s.textContent = v; d.appendChild(s);
+  return d;
+}
+function render(){
+  const box = document.getElementById("results");
+  box.replaceChildren();
+  current.forEach((p, i) => {
+    const row = document.createElement("div"); row.className = "play";
+    const idx = document.createElement("span"); idx.className = "idx"; idx.textContent = (i+1) + ".";
+    const balls = document.createElement("div"); balls.className = "balls";
+    p.main.forEach(v => balls.appendChild(ball(v)));
+    p.extras.forEach(e => {
+      e.values.forEach(v => {
+        const b = ball(v, "extra" + (e.star ? " star" : ""));
+        b.title = e.name; balls.appendChild(b);
+      });
+    });
+    row.append(idx, balls);
+    box.appendChild(row);
+  });
+  document.getElementById("tools").hidden = current.length === 0;
+}
+function generate(){
+  const inp = document.getElementById("n");
+  let n = parseInt(inp.value, 10);
+  if (isNaN(n)) n = 1;
+  n = Math.max(1, Math.min(20, n));
+  inp.value = n;
+  current = Array.from({length:n}, makePlay);
+  render();
+}
+document.getElementById("gen").addEventListener("click", generate);
+document.getElementById("n").addEventListener("keydown", e => { if (e.key === "Enter") generate(); });
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  game = t.dataset.game;
+  document.body.dataset.game = game;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-pressed", b === t));
+  current = [];
+  document.getElementById("results").innerHTML = '<div class="empty">Pulsa «Generar jugadas» para empezar.</div>';
+  document.getElementById("tools").hidden = true;
+}));
+document.getElementById("copy").addEventListener("click", async e => {
+  const name = game === "prim" ? "La Primitiva" : "Euromillones";
+  const text = name + "\n" + current.map((p,i) => (i+1) + ". " + playText(p)).join("\n");
+  try { await navigator.clipboard.writeText(text); e.target.textContent = "Copiado"; }
+  catch { e.target.textContent = "No se pudo copiar"; }
+  setTimeout(() => e.target.textContent = "Copiar todas", 1500);
+});
+</script>
+</body>
+</html>
